@@ -1,10 +1,19 @@
 from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 from lib.models import ModelEnum
 from lib.endpoints import run_benchmark, run_perplexity, get_model_sizes, run_inference_endpoint
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
 
 @app.get("/benchmark")
 async def benchmark(

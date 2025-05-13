@@ -4,6 +4,13 @@ WORKDIR /code
 
 COPY ./app /code
 
+RUN pip install -U "huggingface_hub[cli]"; \
+    huggingface-cli download 1bitLLM/bitnet_b1_58-large --local-dir models/bitnet_b1_58-large;
+
+#RUN pip install -U "huggingface_hub[cli]"; \
+#    huggingface-cli download microsoft/bitnet-b1.58-2B-4T --local-dir models/bitnet_b1_58-large;
+
+
 RUN if [ -z "$(ls -A /code/models)" ]; then \
         echo "Error: No models found in /code/models" && exit 1; \
     fi
@@ -24,6 +31,8 @@ RUN git clone --recursive https://github.com/microsoft/BitNet.git /tmp/BitNet &&
 
 RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt && \
     pip install "fastapi[standard]" "uvicorn[standard]"
+
+RUN apt-get update && apt-get install -y build-essential clang && apt-get clean
 
 RUN if [ -d "/code/models/Llama3-8B-1.58-100B-tokens" ]; then \
         python /code/setup_env.py -md /code/models/Llama3-8B-1.58-100B-tokens -q i2_s --use-pretuned && \
