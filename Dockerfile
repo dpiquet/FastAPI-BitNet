@@ -2,8 +2,6 @@ FROM python:3.9
 
 WORKDIR /code
 
-COPY ./app /code
-
 RUN apt-get update && apt-get install -y \
     wget \
     lsb-release \
@@ -15,44 +13,15 @@ RUN apt-get update && apt-get install -y \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone --recursive https://github.com/microsoft/BitNet.git /tmp/BitNet && \
-    cp -r /tmp/BitNet/* /code && \
-    rm -rf /tmp/BitNet
+# Cloning into a tmp dir as git can't clone into an existing dir
+RUN git clone --recursive https://github.com/microsoft/BitNet.git /code
 
-RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt && \
-    pip install "fastapi[standard]" "uvicorn[standard]"
-
-#RUN pip install -U "huggingface_hub[cli]"; \
-#    huggingface-cli download 1bitLLM/bitnet_b1_58-large --local-dir models/bitnet_b1_58-large;
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 RUN pip install -U "huggingface_hub[cli]"; \
-    huggingface-cli download microsoft/BitNet-b1.58-2B-4T-gguf --local-dir models/BitNet-b1.58-2B-4T;
-
-
-RUN if [ -z "$(ls -A /code/models)" ]; then \
-        echo "Error: No models found in /code/models" && exit 1; \
-    fi
-
-
-RUN if [ -d "/code/models/Llama3-8B-1.58-100B-tokens" ]; then \
-        python /code/setup_env.py -md /code/models/Llama3-8B-1.58-100B-tokens -q i2_s --use-pretuned && \
-        find /code/models/Llama3-8B-1.58-100B-tokens -type f -name "*f32*.gguf" -delete; \
-    fi
-
-RUN if [ -d "/code/models/bitnet_b1_58-large" ]; then \
-        python /code/setup_env.py -md /code/models/bitnet_b1_58-large -q i2_s --use-pretuned && \
-        find /code/models/bitnet_b1_58-large -type f -name "*f32*.gguf" -delete; \
-    fi
-
-RUN if [ -d "/code/models/bitnet_b1_58-3B" ]; then \
-        python /code/setup_env.py -md /code/models/bitnet_b1_58-3B -q i2_s --use-pretuned && \
-        find /code/models/bitnet_b1_58-3B -type f -name "*f32*.gguf" -delete; \
-    fi
-
-RUN if [ -d "/code/models/BitNet-b1.58-2B-4T" ]; then \
-        python /code/setup_env.py -md /code/models/BitNet-b1.58-2B-4T -q i2_s; \
-    fi
+    huggingface-cli download microsoft/BitNet-b1.58-2B-4T-gguf --local-dir models/BitNet-b1.58-2B-4T; \
+    python /code/setup_env.py -md /code/models/BitNet-b1.58-2B-4T -q i2_s;
 
 EXPOSE 8080
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["/code/build/bin/llama-server", "--host", "0.0.0.0", "--port", "8080", "--model", "models/BitNet-b1.58-2B-4T/ggml-model-i2_s.gguf"]
